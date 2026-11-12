@@ -1,0 +1,379 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="flashtix-c4-l2" name="C4 L2 - Containers">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="2060" pageHeight="1650" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#444444;dashed=1;dashPattern=8 5;strokeWidth=1.8;align=left;verticalAlign=bottom;spacingLeft=12;spacingBottom=6;fontColor=#333333;fontSize=12;container=0;" value="&lt;b style=&quot;font-size:16px&quot;&gt;FlashTix&lt;/b&gt;&amp;nbsp;&amp;nbsp;&lt;i&gt;[Software System]&lt;/i&gt;" vertex="1">
+          <mxGeometry height="1040" width="1640" x="123" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="saga" parent="1" style="rounded=1;arcSize=3;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#BBBBBB;fontSize=12;fontColor=#2B2B2B;align=left;verticalAlign=top;spacingLeft=20;spacingTop=12;spacingRight=20;" value="&lt;b style=&quot;font-size:14px&quot;&gt;Checkout SAGA&lt;/b&gt; (orchestrated by Order Service · transactional outbox · at-least-once + idempotent consumers)&lt;br&gt;&lt;br&gt;1. POST /orders + Idempotency-Key → Order Service locks the hold in Reservation (TTL extended to cover the payment) → order PENDING + outbox payment.requested → 202 Accepted.&lt;br&gt;&lt;br&gt;2. Payment Worker consumes payment.requested → Legacy Payment Gateway (timeout 20 s, 3 retries with exponential backoff, circuit breaker, DLQ) → payment.succeeded | payment.failed.&lt;br&gt;&lt;br&gt;3. payment.succeeded → ONE MySQL transaction in booking-db: INSERT sold_seats (UNIQUE event + seat) + order CONFIRMED + outbox order.confirmed.&lt;br&gt;&lt;br&gt;4. order.confirmed → Ticket Service builds PDF + QR (MinIO) and publishes ticket.issued → Notification Worker emails the fan · Catalog refreshes availability · Reservation deletes the hold.&lt;br&gt;&lt;br&gt;5. Compensations: payment.failed → order FAILED + hold released · UNIQUE violation after charging → refund.requested → refund.completed → order CANCELLED." vertex="1">
+          <mxGeometry height="245" width="1640" x="200" y="1310" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="fan" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.25;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.6;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="web" value="Uses&lt;br&gt;[HTTPS]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-20" y="-19.5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="fan" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.75;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.4;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="mobile" value="Uses&lt;br&gt;[HTTPS]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="25" y="-19.5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="org" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="admin" value="Uses&lt;br&gt;[HTTPS]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-4.5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="web" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=orthogonalEdgeStyle;exitX=0.1;exitY=0;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="cdn" value="Loads static bundle [HTTPS]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="10" as="offset" />
+            <Array as="points">
+              <mxPoint x="480" y="254" />
+              <mxPoint x="100" y="254" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="web" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=orthogonalEdgeStyle;exitX=0.2;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.1667;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" target="idp" value="Log in [OIDC + PKCE]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="410" as="offset" />
+            <Array as="points">
+              <mxPoint x="500" y="390" />
+              <mxPoint x="1600" y="390" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e16" edge="1" parent="1" source="mobile" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=orthogonalEdgeStyle;exitX=0.2;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.1667;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" target="idp" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="760" y="390" />
+              <mxPoint x="1600" y="390" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e17" edge="1" parent="1" source="admin" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=orthogonalEdgeStyle;exitX=0.2;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.1667;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" target="idp" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1290" y="390" />
+              <mxPoint x="1600" y="390" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e18" edge="1" parent="1" source="web" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=orthogonalEdgeStyle;exitX=0.8;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="lb" value="API calls&lt;br&gt;[HTTPS / JSON]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-12.5" y="-35" as="offset" />
+            <Array as="points">
+              <mxPoint x="620" y="460" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e19" edge="1" parent="1" source="mobile" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.8;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="lb" value="API calls&lt;br&gt;[HTTPS / JSON]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-40" y="11" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e20" edge="1" parent="1" source="admin" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=orthogonalEdgeStyle;exitX=0.8;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="lb" value="Admin API&lt;br&gt;[HTTPS / JSON]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="7.5" y="-35" as="offset" />
+            <Array as="points">
+              <mxPoint x="1410" y="460" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e21" edge="1" parent="1" source="lb" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="gw" value="Forwards [HTTP]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-0.5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e22" edge="1" parent="1" source="gw" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.9667;exitY=0;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.6667;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" target="idp" value="Fetches JWKS&lt;br&gt;signing keys [HTTPS]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="7.5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e23" edge="1" parent="1" source="gw" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.1933;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="catalog" value="GET /events, /seats&lt;br&gt;[REST]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-21" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e24" edge="1" parent="1" source="gw" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.3467;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="waiting" value="POST /queue,&lt;br&gt;GET /queue/status [REST]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-21" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e25" edge="1" parent="1" source="gw" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="reserv" value="POST / DELETE /holds&lt;br&gt;[REST]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-21" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e26" edge="1" parent="1" source="gw" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.6533;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="order" value="POST /orders (Idempotency-Key)&lt;br&gt;GET /orders/{id} [REST + SSE]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-21" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e27" edge="1" parent="1" source="gw" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.8067;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="ticket" value="GET /tickets/{id}&lt;br&gt;[REST]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-21" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e28" edge="1" parent="1" source="order" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=8;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=orthogonalEdgeStyle;exitX=0.1316;exitY=0;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.8158;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="reserv" value="Locks / extends&lt;br&gt;hold [gRPC]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1180" y="704" />
+              <mxPoint x="1080" y="704" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e29" edge="1" parent="1" source="notif" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.4474;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="notifdb" value="SQL">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e30" edge="1" parent="1" source="catalog" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.2105;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="ccache" value="RESP">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e31" edge="1" parent="1" source="catalog" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.6842;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="catdb" value="SQL&lt;br&gt;(miss)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e32" edge="1" parent="1" source="waiting" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=8;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.7632;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.1818;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="holds" value="ZADD queue&lt;br&gt;[RESP]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e33" edge="1" parent="1" source="reserv" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=8;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.2368;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.7727;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="holds" value="SET NX EX 600&lt;br&gt;(Lua) [RESP]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e34" edge="1" parent="1" source="order" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=8;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.4474;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="bookdb" value="One ACID tx&lt;br&gt;[SQL]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e35" edge="1" parent="1" source="ticket" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.2105;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="ticketdb" value="SQL">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e36" edge="1" parent="1" source="ticket" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.6842;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="files" value="S3 API">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e37" edge="1" parent="1" source="payment" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.3947;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="paydb" value="SQL">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e38" edge="1" parent="1" source="notif" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=8;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0;exitY=0.35;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="email" value="Email&lt;br&gt;[SMTP]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-41" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e39" edge="1" parent="1" source="notif" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=8;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=orthogonalEdgeStyle;exitX=0.1053;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="push" value="Push&lt;br&gt;[FCM API]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-50" y="-28" as="offset" />
+            <Array as="points">
+              <mxPoint x="255" y="920" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e40" edge="1" parent="1" source="payment" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=8;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="pgw" value="Charges card,&lt;br&gt;timeout 20 s&lt;br&gt;[HTTPS]">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="-85" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e41" edge="1" parent="1" source="notif" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.9474;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.1219;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;startArrow=block;startFill=1;dashed=1;dashPattern=6 4;" target="bus" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e42" edge="1" parent="1" source="catalog" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.9474;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.2656;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;startArrow=block;startFill=1;dashed=1;dashPattern=6 4;" target="bus" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e43" edge="1" parent="1" source="reserv" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.9474;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5531;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;startArrow=block;startFill=1;dashed=1;dashPattern=6 4;" target="bus" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e44" edge="1" parent="1" source="order" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.9474;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.6969;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;startArrow=block;startFill=1;dashed=1;dashPattern=6 4;" target="bus" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e45" edge="1" parent="1" source="ticket" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.9474;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.8406;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;startArrow=block;startFill=1;dashed=1;dashPattern=6 4;" target="bus" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e46" edge="1" parent="1" source="payment" style="html=1;rounded=0;endArrow=block;endFill=1;strokeColor=#5E5E5E;strokeWidth=1.3;fontSize=9;fontColor=#2B2B2B;labelBackgroundColor=#FFFFFF;edgeStyle=none;exitX=0.9474;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.9844;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;startArrow=block;startFill=1;dashed=1;dashPattern=6 4;" target="bus" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="t1" parent="1" style="text;html=1;whiteSpace=wrap;fontSize=26;fontColor=#1E1E1E;align=left;verticalAlign=middle;fontStyle=1;spacingLeft=0;" value="FlashTix - Ticket Sales Platform" vertex="1">
+          <mxGeometry height="30" width="1100" x="50" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="t2" parent="1" style="text;html=1;whiteSpace=wrap;fontSize=14;fontColor=#555555;align=left;verticalAlign=middle;" value="C4 Model · Level 2 · Container Diagram · Target architecture (ADR 001)" vertex="1">
+          <mxGeometry height="25" width="1100" x="50" y="44.5" as="geometry" />
+        </mxCell>
+        <mxCell id="fan" parent="1" style="shape=mxgraph.c4.person2;html=1;whiteSpace=wrap;fillColor=#08427B;strokeColor=#052E56;fontColor=#FFFFFF;align=center;verticalAlign=middle;spacingTop=30;" value="&lt;b style=&quot;font-size:14px&quot;&gt;Fan&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px&quot;&gt;[Person]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px&quot;&gt;Browses concerts, queues and buys tickets&lt;/span&gt;" vertex="1">
+          <mxGeometry height="140" width="240" x="570" y="74" as="geometry" />
+        </mxCell>
+        <mxCell id="org" parent="1" style="shape=mxgraph.c4.person2;html=1;whiteSpace=wrap;fillColor=#08427B;strokeColor=#052E56;fontColor=#FFFFFF;align=center;verticalAlign=middle;spacingTop=30;" value="&lt;b style=&quot;font-size:14px&quot;&gt;Event Organizer&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px&quot;&gt;[Person]&lt;/i&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px&quot;&gt;Creates events, seat maps and prices; manages refunds&lt;/span&gt;" vertex="1">
+          <mxGeometry height="140" width="240" x="1230" y="74" as="geometry" />
+        </mxCell>
+        <mxCell id="cdn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:12px&quot;&gt;CDN&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:9px&quot;&gt;[External: Cloudflare]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:9px&quot;&gt;Static assets&lt;br&gt;of the Web App&lt;/span&gt;" vertex="1">
+          <mxGeometry height="90" width="170" x="15" y="275" as="geometry" />
+        </mxCell>
+        <mxCell id="obs" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#F2F7FC;strokeColor=#438DD5;fontColor=#1F4E79;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;dashed=1;dashPattern=6 4;" value="&lt;b style=&quot;font-size:12px&quot;&gt;Observability&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:9px&quot;&gt;[Container: OTel Collector, Prometheus, Grafana, Loki, Tempo]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:9px&quot;&gt;Metrics, logs and traces&lt;br&gt;from every container&lt;/span&gt;" vertex="1">
+          <mxGeometry height="90" width="200" x="220" y="275" as="geometry" />
+        </mxCell>
+        <mxCell id="web" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:13px&quot;&gt;Web App&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px&quot;&gt;[Container: React 18 · Next.js]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px&quot;&gt;Queue, seat map, checkout,&lt;br&gt;live order status (SSE)&lt;/span&gt;" vertex="1">
+          <mxGeometry height="90" width="200" x="460" y="275" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:13px&quot;&gt;Mobile App&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px&quot;&gt;[Container: React Native]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px&quot;&gt;Same buying flow on&lt;br&gt;iOS and Android&lt;/span&gt;" vertex="1">
+          <mxGeometry height="90" width="200" x="720" y="275" as="geometry" />
+        </mxCell>
+        <mxCell id="admin" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:13px&quot;&gt;Admin Console&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px&quot;&gt;[Container: React SPA]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px&quot;&gt;Events, seat maps,&lt;br&gt;prices and refunds&lt;/span&gt;" vertex="1">
+          <mxGeometry height="90" width="200" x="1250" y="275" as="geometry" />
+        </mxCell>
+        <mxCell id="idp" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:13px&quot;&gt;Identity Provider&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px&quot;&gt;[Container: Keycloak 25 · OIDC]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px&quot;&gt;Login for fans and organizers; issues&lt;br&gt;RS256 JWT (FAN / ORGANIZER) [F1]&lt;/span&gt;" vertex="1">
+          <mxGeometry height="90" width="240" x="1560" y="275" as="geometry" />
+        </mxCell>
+        <mxCell id="lb" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:13px&quot;&gt;Load Balancer&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px&quot;&gt;[Container: HAProxy 2.9]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px&quot;&gt;TLS termination · health checks · round-robin to N gateway replicas&lt;/span&gt;" vertex="1">
+          <mxGeometry height="70" width="560" x="740" y="425" as="geometry" />
+        </mxCell>
+        <mxCell id="gw" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:15px&quot;&gt;API Gateway&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:11px&quot;&gt;[Container: Kong Gateway 3 (OSS)]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;Single entry point · JWT validation (JWKS) · rate limiting per user / IP · routing · Idempotency-Key on checkout · X-Correlation-Id · SSE proxy [F1]&lt;/span&gt;" vertex="1">
+          <mxGeometry height="80" width="1500" x="270" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="xn3" parent="1" style="text;html=1;fontColor=#DDEBFA;fontSize=10;align=right;verticalAlign=top;" value="&lt;b&gt;×N&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="40" x="1728" y="543" as="geometry" />
+        </mxCell>
+        <mxCell id="notif" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:13px&quot;&gt;Notification Worker&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px&quot;&gt;[Container: Node.js 20 · consumer]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px&quot;&gt;Email + push to the fan, retries&lt;br&gt;with backoff, dedup [F5]&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="190" x="235" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="xn4" parent="1" style="text;html=1;fontColor=#DDEBFA;fontSize=10;align=right;verticalAlign=top;" value="&lt;b&gt;×N&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="40" x="383" y="733" as="geometry" />
+        </mxCell>
+        <mxCell id="catalog" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:13px&quot;&gt;Catalog Service&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px&quot;&gt;[Container: Node.js 20 · NestJS]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px&quot;&gt;Read model: events, seat map,&lt;br&gt;availability · cache-aside [F2]&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="190" x="465" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="xn5" parent="1" style="text;html=1;fontColor=#DDEBFA;fontSize=10;align=right;verticalAlign=top;" value="&lt;b&gt;×N&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="40" x="613" y="733" as="geometry" />
+        </mxCell>
+        <mxCell id="waiting" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:13px&quot;&gt;Waiting Room Service&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px&quot;&gt;[Container: Node.js 20 · NestJS]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px&quot;&gt;Virtual queue: admits users in batches,&lt;br&gt;signed admission token [F3]&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="190" x="695" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="xn6" parent="1" style="text;html=1;fontColor=#DDEBFA;fontSize=10;align=right;verticalAlign=top;" value="&lt;b&gt;×N&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="40" x="843" y="733" as="geometry" />
+        </mxCell>
+        <mxCell id="reserv" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:13px&quot;&gt;Reservation Service&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px&quot;&gt;[Container: Node.js 20 · NestJS]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px&quot;&gt;Soft seat hold (TTL 10 min),&lt;br&gt;atomic multi-seat Lua script [F3]&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="190" x="925" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="xn7" parent="1" style="text;html=1;fontColor=#DDEBFA;fontSize=10;align=right;verticalAlign=top;" value="&lt;b&gt;×N&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="40" x="1073" y="733" as="geometry" />
+        </mxCell>
+        <mxCell id="order" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:13px&quot;&gt;Order Service&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px&quot;&gt;[Container: Node.js 20 · NestJS]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px&quot;&gt;Checkout SAGA orchestrator,&lt;br&gt;order state machine, outbox [F4]&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="190" x="1155" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="xn8" parent="1" style="text;html=1;fontColor=#DDEBFA;fontSize=10;align=right;verticalAlign=top;" value="&lt;b&gt;×N&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="40" x="1303" y="733" as="geometry" />
+        </mxCell>
+        <mxCell id="ticket" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:13px&quot;&gt;Ticket Service&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px&quot;&gt;[Container: Node.js 20 · consumer]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px&quot;&gt;PDF + QR ticket, signed&lt;br&gt;download URL [F5]&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="190" x="1385" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="xn9" parent="1" style="text;html=1;fontColor=#DDEBFA;fontSize=10;align=right;verticalAlign=top;" value="&lt;b&gt;×N&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="40" x="1533" y="733" as="geometry" />
+        </mxCell>
+        <mxCell id="payment" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:13px&quot;&gt;Payment Worker&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px&quot;&gt;[Container: Node.js 20 · consumer]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px&quot;&gt;Legacy gateway calls: timeout, retries,&lt;br&gt;circuit breaker, DLQ [F4]&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="190" x="1615" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="xn10" parent="1" style="text;html=1;fontColor=#DDEBFA;fontSize=10;align=right;verticalAlign=top;" value="&lt;b&gt;×N&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="40" x="1763" y="733" as="geometry" />
+        </mxCell>
+        <mxCell id="notifdb" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=9;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:10px&quot;&gt;notification-db&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:9px&quot;&gt;[MySQL 8]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:9px&quot;&gt;sent log,&lt;br&gt;dedup keys&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="100" x="270" y="910" as="geometry" />
+        </mxCell>
+        <mxCell id="ccache" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=9;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:10px&quot;&gt;catalog-cache&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:9px&quot;&gt;[Redis 7 · LRU]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:8px&quot;&gt;events, seat maps,&lt;br&gt;availability&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="90" x="460" y="910" as="geometry" />
+        </mxCell>
+        <mxCell id="catdb" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=9;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:10px&quot;&gt;catalog-db&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:9px&quot;&gt;[MySQL 8]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:8px&quot;&gt;events, venues,&lt;br&gt;seats, prices&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="80" x="555" y="910" as="geometry" />
+        </mxCell>
+        <mxCell id="holds" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=9;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:11px&quot;&gt;hold-store&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:9px&quot;&gt;[Redis 7 · AOF, noeviction, Sentinel]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:9px&quot;&gt;seat holds SET NX EX 600&lt;br&gt;waiting-room queue (ZSET)&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="220" x="800" y="910" as="geometry" />
+        </mxCell>
+        <mxCell id="bookdb" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=9;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:11px&quot;&gt;booking-db&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:8px&quot;&gt;[MySQL 8 · primary + replica]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:8px&quot;&gt;orders, saga state, outbox,&lt;br&gt;sold_seats UNIQUE(event, seat)&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="120" x="1180" y="910" as="geometry" />
+        </mxCell>
+        <mxCell id="ticketdb" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=9;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:10px&quot;&gt;ticket-db&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:9px&quot;&gt;[MySQL 8]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:9px&quot;&gt;tickets,&lt;br&gt;QR codes&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="80" x="1385" y="910" as="geometry" />
+        </mxCell>
+        <mxCell id="files" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=9;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:10px&quot;&gt;ticket-files&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:9px&quot;&gt;[MinIO · S3]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:9px&quot;&gt;PDF tickets&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="80" x="1475" y="910" as="geometry" />
+        </mxCell>
+        <mxCell id="paydb" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=9;fillColor=#438DD5;strokeColor=#2E6295;fontColor=#FFFFFF;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:10px&quot;&gt;payment-db&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:9px&quot;&gt;[MySQL 8]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:9px&quot;&gt;payment attempts,&lt;br&gt;idempotency keys&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="110" x="1635" y="910" as="geometry" />
+        </mxCell>
+        <mxCell id="bus" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#2F8F83;strokeColor=#1F6B61;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:15px&quot;&gt;Message Broker - RabbitMQ 3.13&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:11px&quot;&gt;[Container: RabbitMQ · quorum queues]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;Topic exchanges per domain · durable messages · publisher confirms · DLX per queue · at-least-once delivery, idempotent consumers&lt;/span&gt;" vertex="1">
+          <mxGeometry height="70" width="1600" x="220" y="1165" as="geometry" />
+        </mxCell>
+        <mxCell id="email" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:12px&quot;&gt;Email Provider&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:9px&quot;&gt;[External: SendGrid]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:9px&quot;&gt;Delivers emails&lt;br&gt;(SMTP / API)&lt;/span&gt;" vertex="1">
+          <mxGeometry height="80" width="150" x="15" y="725" as="geometry" />
+        </mxCell>
+        <mxCell id="push" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:12px&quot;&gt;Push Provider&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:9px&quot;&gt;[External: Firebase FCM]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:9px&quot;&gt;Push notifications&lt;br&gt;to the app&lt;/span&gt;" vertex="1">
+          <mxGeometry height="80" width="150" x="15" y="880" as="geometry" />
+        </mxCell>
+        <mxCell id="pgw" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#8C8C8C;strokeColor=#6B6B6B;fontColor=#FFFFFF;fontFamily=Helvetica;verticalAlign=middle;strokeWidth=1.5;" value="&lt;b style=&quot;font-size:12px&quot;&gt;Legacy Payment Gateway&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:9px&quot;&gt;[External System]&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:9px&quot;&gt;Charges the card&lt;br&gt;(up to 15 s latency)&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="170" x="1875" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="n47" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7F7F7;strokeColor=#DDDDDD;fontSize=9;fontColor=#333333;align=center;verticalAlign=middle;" value="sub: ticket.issued,&lt;br&gt;order.failed, order.cancelled" vertex="1">
+          <mxGeometry height="40" width="170" x="240" y="1070" as="geometry" />
+        </mxCell>
+        <mxCell id="n48" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7F7F7;strokeColor=#DDDDDD;fontSize=9;fontColor=#333333;align=center;verticalAlign=middle;" value="sub: seat.held, seat.released,&lt;br&gt;order.confirmed&lt;br&gt;→ refresh availability" vertex="1">
+          <mxGeometry height="55" width="170" x="470" y="1062.5" as="geometry" />
+        </mxCell>
+        <mxCell id="n49" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7F7F7;strokeColor=#DDDDDD;fontSize=9;fontColor=#333333;align=center;verticalAlign=middle;" value="pub: seat.held, seat.released&lt;br&gt;sub: order.confirmed (delete hold),&lt;br&gt;order.failed (release hold)" vertex="1">
+          <mxGeometry height="55" width="170" x="925" y="1062.5" as="geometry" />
+        </mxCell>
+        <mxCell id="n50" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7F7F7;strokeColor=#DDDDDD;fontSize=9;fontColor=#333333;align=center;verticalAlign=middle;" value="pub: payment.requested,&lt;br&gt;order.confirmed / failed,&lt;br&gt;refund.requested&lt;br&gt;sub: payment.*, refund.completed" vertex="1">
+          <mxGeometry height="70" width="170" x="1160" y="1055" as="geometry" />
+        </mxCell>
+        <mxCell id="n51" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7F7F7;strokeColor=#DDDDDD;fontSize=9;fontColor=#333333;align=center;verticalAlign=middle;" value="sub: order.confirmed&lt;br&gt;pub: ticket.issued" vertex="1">
+          <mxGeometry height="40" width="150" x="1400" y="1070" as="geometry" />
+        </mxCell>
+        <mxCell id="n52" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7F7F7;strokeColor=#DDDDDD;fontSize=9;fontColor=#333333;align=center;verticalAlign=middle;" value="sub: payment.requested,&lt;br&gt;refund.requested&lt;br&gt;pub: payment.succeeded / failed,&lt;br&gt;refund.completed" vertex="1">
+          <mxGeometry height="70" width="170" x="1615" y="1055" as="geometry" />
+        </mxCell>
+        <mxCell id="lg53" parent="1" style="rounded=0;fillColor=#08427B;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="20" width="32" x="200" y="1600" as="geometry" />
+        </mxCell>
+        <mxCell id="t54" parent="1" style="text;html=1;whiteSpace=wrap;fontSize=11;fontColor=#333333;align=left;verticalAlign=middle;" value="Person" vertex="1">
+          <mxGeometry height="20" width="130" x="245" y="1600" as="geometry" />
+        </mxCell>
+        <mxCell id="lg55" parent="1" style="rounded=0;fillColor=#438DD5;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="20" width="32" x="420" y="1600" as="geometry" />
+        </mxCell>
+        <mxCell id="t56" parent="1" style="text;html=1;whiteSpace=wrap;fontSize=11;fontColor=#333333;align=left;verticalAlign=middle;" value="Container" vertex="1">
+          <mxGeometry height="20" width="130" x="465" y="1600" as="geometry" />
+        </mxCell>
+        <mxCell id="lg57" parent="1" style="rounded=0;fillColor=#2F8F83;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="20" width="32" x="640" y="1600" as="geometry" />
+        </mxCell>
+        <mxCell id="t58" parent="1" style="text;html=1;whiteSpace=wrap;fontSize=11;fontColor=#333333;align=left;verticalAlign=middle;" value="Message broker" vertex="1">
+          <mxGeometry height="20" width="130" x="685" y="1600" as="geometry" />
+        </mxCell>
+        <mxCell id="lg59" parent="1" style="rounded=0;fillColor=#8C8C8C;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="20" width="32" x="860" y="1600" as="geometry" />
+        </mxCell>
+        <mxCell id="t60" parent="1" style="text;html=1;whiteSpace=wrap;fontSize=11;fontColor=#333333;align=left;verticalAlign=middle;" value="External system" vertex="1">
+          <mxGeometry height="20" width="130" x="905" y="1600" as="geometry" />
+        </mxCell>
+        <mxCell id="t61" parent="1" style="text;html=1;whiteSpace=wrap;fontSize=11;fontColor=#333333;align=left;verticalAlign=middle;" value="- - -  System boundary" vertex="1">
+          <mxGeometry height="20" width="160" x="1180" y="1600" as="geometry" />
+        </mxCell>
+        <mxCell id="t62" parent="1" style="text;html=1;whiteSpace=wrap;fontSize=11;fontColor=#333333;align=left;verticalAlign=middle;" value="- - ▸  Async (AMQP)" vertex="1">
+          <mxGeometry height="20" width="160" x="1440" y="1600" as="geometry" />
+        </mxCell>
+        <mxCell id="t63" parent="1" style="text;html=1;whiteSpace=wrap;fontSize=10;fontColor=#555555;align=right;verticalAlign=middle;" value="×N = stateless, horizontally scaled · [F1]-[F5] = mandatory features" vertex="1">
+          <mxGeometry height="20" width="480" x="1360" y="1626" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
