@@ -15,13 +15,14 @@ slow legacy gateway (up to 15 s) and email the ticket, **never selling the same 
 | Service | Technology | Responsibility | Data it owns | Feature |
 | --- | --- | --- | --- | --- |
 | Identity Provider | Keycloak 25 (OIDC) | Login; issues RS256 JWT with roles `FAN` / `ORGANIZER` | own schema | F1 |
-| API Gateway | Kong 3.8 (DB-less) | Single entry point: JWT validation, rate limiting, routing, `Idempotency-Key`, correlation ID | - | F1 |
+| Load Balancer | HAProxy 2.8 | Single entry point: TLS termination, load balancing across Kong instances, health checks | - | F1 |
+| API Gateway | Kong 3.8 (DB-less) | JWT validation, rate limiting, routing, `Idempotency-Key`, correlation ID, request/response transformation | - | F1 |
 | Catalog Service | Node.js 20 · NestJS | Events, seat map and availability (cache-aside) | `catalog-db` (MySQL), `catalog-cache` (Redis) | F2 |
 | Waiting Room Service | Node.js 20 · NestJS | Virtual queue; admits fans in batches with a signed token | `hold-store` (Redis) | F3 |
 | Reservation Service | Node.js 20 · NestJS | Soft seat holds with TTL (atomic Lua script) | `hold-store` (Redis, AOF) | F3 |
 | Order Service | Node.js 20 · NestJS | Checkout **saga orchestrator**, order state, transactional outbox, SSE endpoint | `booking-db` (MySQL, source of truth) | F4 |
 | Payment Worker | Node.js 20 · consumer | Calls the legacy gateway with timeout, retries, circuit breaker; refunds | `payment-db` (MySQL) | F4 |
-| Ticket Service | Node.js 20 · consumer | PDF + QR ticket, signed download URL | `ticket-db` (MySQL), MinIO | F5 |
+| Ticket Service | Node.js 20 · consumer | PDF + QR ticket, signed download URL | `ticket-db` (MySQL), S3-compatible (s3mock in dev) | F5 |
 | Notification Worker | Node.js 20 · consumer | Email (SendGrid) and push (FCM) with dedup | `notification-db` (MySQL) | F5 |
 | Message Broker | RabbitMQ 3.13 | Asynchronous events between services; Prometheus metrics on port 15692 | - | F4, F5 |
 | **Observability Stack** | | | | **F6** |
